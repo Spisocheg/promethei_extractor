@@ -51,58 +51,38 @@
 
 ###### запрос
 
-У api Прометея нет каких-либо лимитов. Все данные можно получать по url `{url}`. Ограничение лишь в том, что 
-при парсинге следует перебрать query-параметр `month` (и `year`) с начала семестра и до конца, чтобы получить все 
-События, поскольку иначе платформа отдает только часть Событий.
+У api Прометея нет каких-либо лимитов. Все данные можно получать по url `https://dot.mpei.ac.ru/close/ajax.asp`. 
+Ограничение лишь в том, что при парсинге следует перебрать query-параметр `month` и `year` с начала семестра и 
+до конца, чтобы получить все События, поскольку иначе платформа отдает только часть Событий.
 
-Помимо этого есть небольшая защита с помощью Cookie - их нужно получать первичным запросом и использовать дальше в сессии.
+Доступ к данным защищён сессионной кукой ASPSESSIONID* (конкретное имя куки зависит от того, какой сервер веб-фермы 
+обработал запрос, и может отличаться от сессии к сессии) - без неё сервер отдаёт пустой ответ. В данном проекте кука 
+выдаётся в момент авторизации и переиспользуется во всех последующих запросах в рамках одного прогона.
 
-Для работы парсера требуется кука `ASPSESSIONID`, иначе сервер будет отдавать пустые ответы. Эта кука - это некоторый 
-идентификатор балансировщика нагрузки
+Ниже указан пайплайн запросов, достаточный для парсинга данных (при реальной работе браузера используется больше 
+сторонних запросов). Подробнее о чувствительных данных см. п.6
 
+1. Запрос отправки кредов пользователя и получения в ответ куки сессии
 ```text
+POST https://dot.mpei.ac.ru/close/auth.asp?action=enter
+Content-Type: application/x-www-form-urlencoded
 
+ustatus:
+returl:
+AuthLogin:$LOGIN
+AuthPassword:$PASS
+```
+из ответа этого запроса следует забрать `Set-Cookie`
+
+2. Запрос получения Событий (его следует парсить, подбирая `month` и `year`):
+```text
+GET https://dot.mpei.ac.ru/close/ajax.asp?action=get_events_and_accesses&year={year}&month={month}
+Referer: https://dot.mpei.ac.ru/close/students/info.asp
+X-Requested-With: XMLHttpRequest
+Cookie: ASPSESSIONID*=SESSION_COOKIE
 ```
 
-
-ПОЛНЫЙ ПАЙПЛАЙН:
-
-отправляем запрос на https://dot.mpei.ac.ru/close/
-получаем куку ASPSESSIONID
-
-шлем пост запрос на https://dot.mpei.ac.ru/close/auth.asp?action=enter с кукой и телом
-ustatus:
-returl:
-AuthLogin:YasnevaAT
-AuthPassword:PASS
-и заголовок Content-Type=application/x-www-form-urlencoded
-
-снова шлем запрос на https://dot.mpei.ac.ru/close/ с кукой и заголовками
-Upgrade-Insecure-Requests:1
-Referer:https://dot.mpei.ac.ru/close/auth.asp?action=enter
-
-и теперь уже парсим https://dot.mpei.ac.ru/close/ajax.asp?action=get_events_and_accesses&year={year}&month={month} с кукой
-и заголовками
-Referer:https://dot.mpei.ac.ru/close/students/info.asp
-X-Requested-With:XMLHttpRequest
-
-
-УКОРОЧЕНЫЙ ПАЙПЛАЙН (тоже работает):
-
-шлем пост запрос на https://dot.mpei.ac.ru/close/auth.asp?action=enter с телом
-ustatus:
-returl:
-AuthLogin:YasnevaAT
-AuthPassword:PASS
-и заголовок Content-Type=application/x-www-form-urlencoded
-забираем куку ASPSESSIONID
-
-парсим https://dot.mpei.ac.ru/close/ajax.asp?action=get_events_and_accesses&year={year}&month={month} с кукой
-и заголовками
-Referer:https://dot.mpei.ac.ru/close/students/info.asp
-X-Requested-With:XMLHttpRequest
-
-
+\* Примечание: знак `$` означает, что значение хранится в переменных окружения (см. п.6 - Безопасность)
 
 ###### ответ
 
@@ -181,6 +161,8 @@ class Event(BaseModel):
 5. Нормализация - с помощью модели События и `pydantic`
 6. Тип События не содержится в конкретном поле, нужно вычленять из полей `elementName` и других; либо еще можно маппить 
 из `eventSubType`, но нужно больше статистики
+7. Поскольку url'ы до эндпоинта авторизации и получения Событий не меняются продолжительное время, то и храниться в 
+конкретном файле они не будут, а только в качестве констант в коде
 
 
 ## 5. Бизнес-правила и ограничения
@@ -215,8 +197,8 @@ class Event(BaseModel):
 - **Переносимость**: Python 3.12, без ОС-специфичных зависимостей
 - **Тестируемость**: `normalize` - чистая функция, покрывается unit-тестами без сети; `parser` мокируется в тестах
 - **Логирование**: минимум `INFO` (шаги пайплайна) и `ERROR` (сбои); без секретов в логах
-- **Безопасность**: креды и токены не коммитятся, `.env` в `.gitignore`; к чувствительным данным относятся url api 
-Прометея и путь до Obsidian vault
+- **Безопасность**: креды и токены не коммитятся, `.env` в `.gitignore`; к чувствительным данным относятся путь до 
+Obsidian vault, логин и пароль к учебной платформе
 
 
 ## 7. Приоритизация и версии (по MoSCoW)
