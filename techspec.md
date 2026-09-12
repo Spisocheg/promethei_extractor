@@ -51,9 +51,58 @@
 
 ###### запрос
 
-У api Прометея нет каких-либо защит или лимитов. Все данные можно получать по url `{url}`. Ограничение лишь в том, что 
-при парсинге следует перебрать query-параметр `month` (и `year`), поскольку платформа может некорректно отдавать иногда 
-данные при неправильных значениях этих параметров.
+У api Прометея нет каких-либо лимитов. Все данные можно получать по url `{url}`. Ограничение лишь в том, что 
+при парсинге следует перебрать query-параметр `month` (и `year`) с начала семестра и до конца, чтобы получить все 
+События, поскольку иначе платформа отдает только часть Событий.
+
+Помимо этого есть небольшая защита с помощью Cookie - их нужно получать первичным запросом и использовать дальше в сессии.
+
+Для работы парсера требуется кука `ASPSESSIONID`, иначе сервер будет отдавать пустые ответы. Эта кука - это некоторый 
+идентификатор балансировщика нагрузки
+
+```text
+
+```
+
+
+ПОЛНЫЙ ПАЙПЛАЙН:
+
+отправляем запрос на https://dot.mpei.ac.ru/close/
+получаем куку ASPSESSIONID
+
+шлем пост запрос на https://dot.mpei.ac.ru/close/auth.asp?action=enter с кукой и телом
+ustatus:
+returl:
+AuthLogin:YasnevaAT
+AuthPassword:PASS
+и заголовок Content-Type=application/x-www-form-urlencoded
+
+снова шлем запрос на https://dot.mpei.ac.ru/close/ с кукой и заголовками
+Upgrade-Insecure-Requests:1
+Referer:https://dot.mpei.ac.ru/close/auth.asp?action=enter
+
+и теперь уже парсим https://dot.mpei.ac.ru/close/ajax.asp?action=get_events_and_accesses&year={year}&month={month} с кукой
+и заголовками
+Referer:https://dot.mpei.ac.ru/close/students/info.asp
+X-Requested-With:XMLHttpRequest
+
+
+УКОРОЧЕНЫЙ ПАЙПЛАЙН (тоже работает):
+
+шлем пост запрос на https://dot.mpei.ac.ru/close/auth.asp?action=enter с телом
+ustatus:
+returl:
+AuthLogin:YasnevaAT
+AuthPassword:PASS
+и заголовок Content-Type=application/x-www-form-urlencoded
+забираем куку ASPSESSIONID
+
+парсим https://dot.mpei.ac.ru/close/ajax.asp?action=get_events_and_accesses&year={year}&month={month} с кукой
+и заголовками
+Referer:https://dot.mpei.ac.ru/close/students/info.asp
+X-Requested-With:XMLHttpRequest
+
+
 
 ###### ответ
 
@@ -182,6 +231,7 @@ class Event(BaseModel):
 - выгрузка списка Событий в `.json`
 - креды в `.env`
 - логирование
+- автоматическое получение требуемых для работы с Прометем cookies для полностью автономной работы экстрактора
 
 #### Should Have
 
@@ -217,6 +267,9 @@ class Event(BaseModel):
 - [ ] перенос системы на `uv`
 - [ ] обработка ошибок
 - [ ] логирование
+
+#### v0.4
+- [ ] автоматическое получение требуемых для работы с Прометем cookies
 
 #### v1.0
 - [ ] упаковка в библиотеку
@@ -258,3 +311,6 @@ class Event(BaseModel):
 
 11. Какие будут использованы библиотеки и технологии в каждом из модулей? Задокументировать в п.4 (библиотеки) и 
 в п.5 (конкретные алгоритмы)
+
+12. Требуется ли периодический вызов chk_logging для поддержания сессии живой при длительном прогоне, или сессии 
+достаточно на весь короткий скрипт?
