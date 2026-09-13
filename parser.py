@@ -22,11 +22,25 @@ def _get_dates_range() -> list[Date]:
     return dates_range
 
 
-def parse(login, password):
+def parse(login, password) -> list[httpx.Response]:
+    responses_by_months = []
     with httpx.Client() as client:
         body = const.LOGIN_BODY.copy()
         body.update({'AuthLogin': login, 'AuthPassword': password})
         client.post(const.PROMETHEI_API_LOGIN_URL,
-                    headers=const.LOGIN_HEADERS,
                     params=const.LOGIN_PARAMS,
+                    headers=const.LOGIN_HEADERS,
                     data=body)
+
+        # print('логин успешен, кука:', client.cookies) <- место для лога
+
+        for d in _get_dates_range():
+            ev_params = const.EVENTS_PARAMS.copy()
+            ev_params.update({'year': str(d.year), 'month': str(d.month)})
+            r = client.get(const.PROMETHEI_API_EVENTS_URL,
+                           params=ev_params,
+                           headers=const.EVENTS_HEADERS,)
+
+            responses_by_months.append(r)
+
+    return responses_by_months
