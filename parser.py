@@ -39,8 +39,10 @@ def parse(login, password) -> list[httpx.Response]:
             ev_params.update({'year': str(d.year), 'month': str(d.month)})
             r = client.get(const.PROMETHEI_API_EVENTS_URL,
                            params=ev_params,
-                           headers=const.EVENTS_HEADERS,)
+                           headers=const.EVENTS_HEADERS)
 
-            responses_by_months.append(r)
+            serialized = etree.fromstring(r.content)
+
+            responses_by_months.append(serialized)
 
     return responses_by_months
