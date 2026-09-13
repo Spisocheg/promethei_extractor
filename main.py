@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 
 import parser
+import normalize
 
 
 load_dotenv()
@@ -12,5 +13,5 @@ PASSWORD = os.getenv('PROMETHEI_PASS')
 
 
 if __name__ == '__main__':
-    parser.parse(LOGIN, PASSWORD)
-    # print(parser._get_dates_range())
+    responses = parser.parse(LOGIN, PASSWORD)
+    normalized = normalize.normalize(responses)
