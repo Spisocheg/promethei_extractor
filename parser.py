@@ -3,6 +3,7 @@ from dateutil.relativedelta import relativedelta
 
 import httpx
 from lxml import etree
+from lxml.etree import _Element
 
 import constants as const
 from models import Date
@@ -22,7 +23,7 @@ def _get_dates_range() -> list[Date]:
     return dates_range
 
 
-def parse(login, password) -> list[httpx.Response]:
+def parse(login, password) -> list[_Element]:
     responses_by_months = []
     with httpx.Client() as client:
         body = const.LOGIN_BODY.copy()
