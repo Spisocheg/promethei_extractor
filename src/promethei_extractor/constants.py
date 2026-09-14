@@ -1,6 +1,3 @@
-from datetime import datetime, timedelta
-
-
 PROMETHEI_API_LOGIN_URL = "https://dot.mpei.ac.ru/close/auth.asp"
 LOGIN_PARAMS = {'action': 'enter'}
 LOGIN_HEADERS = {'Content-Type': 'application/x-www-form-urlencoded'}

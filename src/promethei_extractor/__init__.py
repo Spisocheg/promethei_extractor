@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from promethei-extractor!")
+from .pipeline import get_events

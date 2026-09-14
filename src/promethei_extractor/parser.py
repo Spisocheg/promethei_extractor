@@ -1,12 +1,12 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 
 import httpx
 from lxml import etree
-from lxml.etree import _Element
+from lxml.etree import _Element     # noqa : нужен только для типизации
 
-import constants as const
-from models import Date
+from . import constants as const
+from .models import Date
 
 
 def _get_dates_range() -> list[Date]:

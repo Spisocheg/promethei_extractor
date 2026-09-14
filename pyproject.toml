@@ -12,11 +12,12 @@ dependencies = [
     "loguru>=0.7.3",
     "lxml>=6.1.3",
     "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
     "python-dateutil>=2.9.0.post0",
 ]
 
 [project.scripts]
-promethei-extractor = "promethei_extractor:main"
+promethei-extractor = "promethei_extractor.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.9,<0.13.0"]

@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from lxml.etree import _Element
+from lxml.etree import _Element     # noqa : нужен только для типизации
 
-from models import Event, Course
+from .models import Event, Course
 
 
 def _extract_raw_events(responses: list) -> list[_Element]:
@@ -32,7 +32,7 @@ def _transform_events2model(raw_events: list[_Element]) -> list[Event]:
                         id_=raw_e.xpath('./courseId')[0].text.strip('{}'),
                         name=raw_e.xpath('./courseName')[0].text
                     )
-                )   # str_type заполняется до валидации декоратором модели
+                )   # noqa: str_type заполняется до валидации декоратором модели
             )
         except AttributeError:
             pass
