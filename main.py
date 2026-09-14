@@ -5,9 +5,7 @@ from datetime import date
 from dotenv import load_dotenv
 from pydantic import RootModel
 
-import parser
-import normalize
-
+from promethei_extractor import parser, normalize
 
 root = pathlib.Path(__file__).parent
 
