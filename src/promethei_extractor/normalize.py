@@ -2,6 +2,7 @@ from datetime import datetime
 
 from lxml.etree import _Element     # noqa : нужен только для типизации
 from loguru import logger
+from pydantic import ValidationError
 
 from .models import Event, Course
 
@@ -31,7 +32,7 @@ def _transform_events2model(raw_events: list[_Element]) -> list[Event]:
                 Event(
                     id_=raw_e.xpath('./elementId')[0].text.strip('{}'),
                     name=raw_e.xpath('./elementName')[0].text,
-                    type_=int(raw_e.xpath('./eventSubType')[0].text),
+                    type_=raw_e.xpath('./eventSubType')[0].text,
                     date_start=datetime.strptime(raw_e.xpath('./eventDateBegin')[0].text, '%d.%m.%Y %H:%M').date(),
                     date_end=datetime.strptime(raw_e.xpath('./eventDateEnd')[0].text, '%d.%m.%Y %H:%M').date(),
                     course=Course(
@@ -41,7 +42,16 @@ def _transform_events2model(raw_events: list[_Element]) -> list[Event]:
                 )   # noqa: str_type заполняется до валидации декоратором модели
             )
         except AttributeError:
-            pass        # какой-то странный ивент по физ-ре без данных
+            pass        # зачастую это какой-то странный ивент по физ-ре без данных
+        except IndexError as e:
+            logger.warning('Встречено Событие с отсутствие какого-либо обязательного поля (подробнее в debug). Пропуск')
+            logger.debug(e)
+        except ValidationError as e:
+            logger.warning('Встречено Событие, не прошедшее валидацию (подробнее в debug). Пропуск')
+            logger.debug(e)
+        except TypeError as e:
+            logger.warning('Встречено Событие с необрабатываемой датой (подробнее в debug). Пропуск')
+            logger.debug(e)
     return events
 
 

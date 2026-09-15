@@ -17,13 +17,15 @@ class Course(BaseModel):
     @classmethod
     def clean_name(cls, raw: str) -> str:
         sub_info = raw.rfind('(ИДДО')
-        return raw[:sub_info-1]
+        if sub_info != -1:
+            return raw[:sub_info-1]
+        return raw
 
 
 class Event(BaseModel):
     id_: UUID
     name: str
-    type_: int          # до того как будет точно известен маппинг номера типа с самим типом
+    type_: str          # числовой тип ивента; маппинг неизвестен, сейчас ивент берется из name
     str_type: str
     date_start: date
     date_end: date
