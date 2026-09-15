@@ -1,4 +1,3 @@
-import sys
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 
@@ -8,6 +7,7 @@ from lxml.etree import _Element     # noqa : нужен только для ти
 from loguru import logger
 
 from . import constants as const
+from .exceptions import AuthenticationError, PrometheiApiError, MalformedResponseError
 from .models import Date
 
 
@@ -32,29 +32,44 @@ def _get_sem_num() -> str:
 
 
 def parse(login, password) -> list[_Element]:
+    parser = etree.XMLParser(recover=True)
+
     responses_by_months = []
     with httpx.Client() as client:
         body = const.LOGIN_BODY.copy()
         body.update({'AuthLogin': login, 'AuthPassword': password})
-        client.post(const.PROMETHEI_API_LOGIN_URL,
-                    params=const.LOGIN_PARAMS,
-                    headers=const.LOGIN_HEADERS,
-                    data=body)
+        try:
+            client.post(const.PROMETHEI_API_LOGIN_URL,
+                        params=const.LOGIN_PARAMS,
+                        headers=const.LOGIN_HEADERS,
+                        data=body)
+        except httpx.HTTPError as e:
+            raise PrometheiApiError('Не удалось подключиться к Прометею для входа') from e
 
         if not client.cookies or dict(client.cookies).get('AuthLock'):
-            logger.critical('Cookies сессии нет. Остановка работы приложения. '
-                            'Проверьте логин и пароль пользователя Прометей и повторите попытку')
-            sys.exit()
+            raise AuthenticationError(
+                'Cookies сессии нет. Проверьте логин и пароль пользователя Прометей и повторите попытку'
+            )
         logger.info(f'Вход выполнен под аккаунтом {login}. Cookies сессии собраны')
 
         for d in _get_dates_range():
             ev_params = const.EVENTS_PARAMS.copy()
             ev_params.update({'year': str(d.year), 'month': str(d.month)})
-            r = client.get(const.PROMETHEI_API_EVENTS_URL,
-                           params=ev_params,
-                           headers=const.EVENTS_HEADERS)
+            try:
+                r = client.get(const.PROMETHEI_API_EVENTS_URL,
+                               params=ev_params,
+                               headers=const.EVENTS_HEADERS)
+            except httpx.HTTPError as e:
+                raise PrometheiApiError(f'Не удалось получить события за {d.month}.{d.year}') from e
 
-            serialized = etree.fromstring(r.content)
+            try:
+                serialized = etree.fromstring(r.content, parser=parser)
+            except etree.XMLSyntaxError as e:
+                raise MalformedResponseError(f'Не удалось разобрать ответ за {d.month}.{d.year}') from e
+
+            if parser.error_log:
+                logger.debug(f'При чтении xml потребовалось восстановление для следующих ошибок:\n{parser.error_log}')
+
             responses_by_months.append(serialized)
             logger.debug(f'Получен запрос с датами {d.month} {d.year} и преобразован в xml')
 

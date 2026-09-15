@@ -1,9 +1,11 @@
 import sys
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from loguru import logger
+
+from .exceptions import ConfigurationError
 
 
 class ExtractorSettings(BaseSettings):
@@ -23,7 +25,12 @@ class _LazySettings:
 
     def __getattr__(self, item):
         if self._instance is None:
-            self._instance = ExtractorSettings()    # noqa
+            try:
+                self._instance = ExtractorSettings()    # noqa
+            except ValidationError as e:
+                raise ConfigurationError(
+                    'Не заданы логин/пароль пользователя Прометей или .env отсутствует'
+                ) from e
         return getattr(self._instance, item)
 
 

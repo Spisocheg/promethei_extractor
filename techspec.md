@@ -279,6 +279,11 @@ Obsidian vault, логин и пароль к учебной платформе
 
 #### v0.4
 - [/] обработка ошибок
+  - [x] кастомные исключения
+  - [x] вынести `sys.exit` в `cli.py`
+  - [x] сетевые ошибки (`httpx.HTTPError`/`httpx.TimeoutException`)
+  - [ ] ошибки нормализации (`IndexError`, `ValueError`, `ValidationError`; отриц индекс `raw.rfind('(ИДДО')`)
+  - [x] ошибки при записи файла (`FileNotFoundError`/`PermissionError`)
 - [x] логирование
 
 #### v1.0

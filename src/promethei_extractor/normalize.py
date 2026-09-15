@@ -41,7 +41,7 @@ def _transform_events2model(raw_events: list[_Element]) -> list[Event]:
                 )   # noqa: str_type заполняется до валидации декоратором модели
             )
         except AttributeError:
-            pass
+            pass        # какой-то странный ивент по физ-ре без данных
     return events
 
 
