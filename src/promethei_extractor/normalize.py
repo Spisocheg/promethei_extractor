@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from lxml.etree import _Element     # noqa : нужен только для типизации
+from loguru import logger
 
 from .models import Event, Course
 
@@ -13,6 +14,11 @@ def _extract_raw_events(responses: list) -> list[_Element]:
     raw_events = list(filter(
         lambda ev: ev.xpath('./eventType')[0].text == 'event', not_filtered_events
     ))
+
+    if raw_events:
+        logger.debug('Список Событий из респонсов получен')
+    else:
+        logger.debug('Список Событий из респонсов пустой. Возможен пустой выходной файл')
 
     return raw_events
 
@@ -46,6 +52,7 @@ def _dedup_events(events: list[Event]) -> list[Event]:
         if ev.id_ not in ids:
             filtered_e.append(ev)
             ids.add(ev.id_)
+    logger.debug('Список Событий очищен от дубликатов')
     return filtered_e
 
 
