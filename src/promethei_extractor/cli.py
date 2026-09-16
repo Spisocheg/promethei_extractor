@@ -30,6 +30,7 @@ def main():
     arg_parser.add_argument('--debug', action='store_true', help='Показывать debug-логи')
     args = arg_parser.parse_args()
 
+    logger.enable('promethei_extractor')
     init_logger(level='DEBUG' if args.debug else 'INFO')
 
     try:
