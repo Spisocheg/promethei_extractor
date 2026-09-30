@@ -1,5 +1,6 @@
 from uuid import UUID
 from datetime import date
+import re
 
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -33,10 +34,16 @@ class Event(BaseModel):
 
     @model_validator(mode="before")
     def clean_name_gen_type(self) -> dict:
-        raw_name = self['name']
+        raw_name = re.sub(r'<[^>]+>', '', self['name']).strip()
+
         if '_' not in raw_name:
-            cutted, t = raw_name.rsplit('. ', maxsplit=1)
-            cleaned = "".join(filter(lambda char: char not in ('<', 'b', '>', '/'), cutted))
+            parts = raw_name.rsplit('. ', maxsplit=2)
+            if len(parts) == 3:
+                cutted = '. '.join(parts[:2])
+                t = parts[2]
+            else:
+                cutted, t = raw_name, ''
+            cleaned = cutted.strip()
         else:
             t = 'Итоговая работа'
             separated = raw_name.split('-Б-')[0]
