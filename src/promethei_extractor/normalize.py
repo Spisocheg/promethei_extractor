@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from lxml import etree
 from lxml.etree import _Element     # noqa : нужен только для типизации
 from loguru import logger
 from pydantic import ValidationError
@@ -46,12 +47,15 @@ def _transform_events2model(raw_events: list[_Element]) -> list[Event]:
         except IndexError as e:
             logger.warning('Встречено Событие с отсутствие какого-либо обязательного поля (подробнее в debug). Пропуск')
             logger.debug(e)
+            logger.debug(etree.tostring(raw_e, encoding='unicode'))
         except ValidationError as e:
             logger.warning('Встречено Событие, не прошедшее валидацию (подробнее в debug). Пропуск')
             logger.debug(e)
+            logger.debug(etree.tostring(raw_e, encoding='unicode'))
         except TypeError as e:
             logger.warning('Встречено Событие с необрабатываемой датой (подробнее в debug). Пропуск')
             logger.debug(e)
+            logger.debug(etree.tostring(raw_e, encoding='unicode'))
     return events
 
 
